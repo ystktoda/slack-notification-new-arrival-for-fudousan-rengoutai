@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  new-arrival
+
+  Sample SAM Template for new-arrival
+
+Parameters:
+  TargetUrl:
+    Type: String
+  SlackUrl:
+    Type: String
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+
+Resources:
+  NewArrivalForFRFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: ./
+      Handler: lambdaNewArrivalForFR.handler
+      Runtime: python3.7
+      Policies: AmazonDynamoDBFullAccess
+      Events:
+        NewArrivalForFRSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0/5 * * * ? *)
+      Environment:
+        Variables:
+          TARGET_URL: !Ref TargetUrl
+          SLACK_URL: !Ref SlackUrl
+
+  NewArrivalForFRLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${NewArrivalForFRFunction}
+      RetentionInDays: 3
+
+  TaskDynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: realty
+          AttributeType: S
+      TableName: new_arrival_for_fr
+      KeySchema:
+        - AttributeName: realty
+          KeyType: HASH
+      ProvisionedThroughput: 
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
